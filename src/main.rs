@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::env;
 
 use dotenv::dotenv;
@@ -5,6 +6,10 @@ use serenity::async_trait;
 use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
 use serenity::prelude::*;
+
+use reqwest;
+use std::time::Duration;
+use tokio::time::sleep;
 
 struct Handler;
 
@@ -29,6 +34,54 @@ impl EventHandler for Handler {
             if let Err(why) = msg
                 .channel_id
                 .say(&ctx.http, format!("{}", res.abs()))
+                .await
+            {
+                println!("Error sending message: {why:?}");
+            }
+        } else if msg.content == "!pw start" {
+            let url = env::var("GCP_API").expect("Expected a token in the environment")
+                + "/startinstance";
+            let mut map = HashMap::new();
+            map.insert("name", "palworld1");
+            map.insert("project", "droprealms");
+            map.insert("zone", "asia-northeast1-b");
+            let client = reqwest::Client::new();
+            client.put(url).json(&map).send().await.unwrap();
+            if let Err(why) = msg
+                .channel_id
+                .say(&ctx.http, format!("palworldのサーバーを起動しました。"))
+                .await
+            {
+                println!("Error sending message: {why:?}");
+            }
+        } else if msg.content == "!pw ip" {
+            let url = env::var("GCP_API").expect("Expected a token in the environment") + "/natip ";
+            let mut map = HashMap::new();
+            map.insert("name", "palworld1");
+            map.insert("project", "droprealms");
+            map.insert("zone", "asia-northeast1-b");
+            let client = reqwest::Client::new();
+            let response = client.put(url).json(&map).send().await.unwrap();
+            let body = response.text().await.unwrap();
+            if let Err(why) = msg
+                .channel_id
+                .say(&ctx.http, format!("{}", body + ":8211"))
+                .await
+            {
+                println!("Error sending message: {why:?}");
+            }
+        } else if msg.content == "!pw stop" {
+            let url =
+                env::var("GCP_API").expect("Expected a token in the environment") + "/stopinstance";
+            let mut map = HashMap::new();
+            map.insert("name", "palworld1");
+            map.insert("project", "droprealms");
+            map.insert("zone", "asia-northeast1-b");
+            let client = reqwest::Client::new();
+            client.put(url).json(&map).send().await.unwrap();
+            if let Err(why) = msg
+                .channel_id
+                .say(&ctx.http, format!("palworldのサーバーを停止しました。"))
                 .await
             {
                 println!("Error sending message: {why:?}");
